@@ -1,9 +1,9 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import clsx from 'clsx';
 import { makeStyles } from '@material-ui/core/styles';
 import Paper from '@material-ui/core/Paper';
 import Button from '@material-ui/core/Button';
-import Typography from '@material-ui/core/Button';
+import Typography from '@material-ui/core/Typography';
 import OutlinedInput from '@material-ui/core/OutlinedInput';
 import FormControl from '@material-ui/core/FormControl';
 import Select from '@material-ui/core/Select';
@@ -13,6 +13,9 @@ import FormHelperText from '@material-ui/core/FormHelperText';
 import TextField from '@material-ui/core/TextField';
 import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogTitle from '@material-ui/core/DialogTitle';
 import IconButton from '@material-ui/core/IconButton';
 import  {Link} from 'react-router-dom';
 
@@ -47,11 +50,17 @@ export default function Register(props) {
   });
   const [values, setValues] = React.useState({
     showPassword: false,
+    showPassword2: false,
   });
   const { errs, registerUser, history, getErrs } = props;
   const inputLabel = React.useRef(null);
+  const [open, setOpen] = React.useState(false);
   const [labelWidth, setLabelWidth] = React.useState(0);
-  React.useEffect(() => {
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  useEffect(() => {
     setLabelWidth(inputLabel.current.offsetWidth);
     setState({
       ...state,
@@ -64,7 +73,9 @@ export default function Register(props) {
   const handleClickShowPassword = () => {
     setValues({ ...values, showPassword: !values.showPassword });
   };
-
+  const handleClickShowPassword2 = () => {
+    setValues({ ...values, showPassword2: !values.showPassword2 });
+  };
   const handleMouseDownPassword = event => {
     event.preventDefault();
   };
@@ -74,11 +85,20 @@ export default function Register(props) {
       [name]: event.target.value
     });
   };
-  const handleClick = () => {
-    registerUser({ ...state }, () => {
-      history.push('/');
-      getErrs({});
-    });
+  const handleClick =  e => {
+    e.preventDefault();
+    if (!navigator.onLine) {
+      setOpen(true);
+    }else{
+      registerUser({ ...state }, type => {
+        if (type == 1) {
+          history.push('/guest');
+        } else {
+          history.push('/host');
+        }
+      });
+    }
+    
   };
   const handleOnChange = e => {
     setState({
@@ -95,17 +115,15 @@ export default function Register(props) {
         height: '100vh'
       }}
     >
-      <Paper
-        className={classes.root}
+      <Paper className={classes.root}>
+        <form
         style={{
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center'
         }}
-      >
-        <form>
-        <Typography variant="h3">Đăng kí</Typography>
+        ><Typography variant="h3">Đăng nhập</Typography>
         <TextField
           className={classes.textfield}
           name="login"
@@ -116,12 +134,12 @@ export default function Register(props) {
           variant="outlined"
           onChange={handleOnChange}
         />
-        <FormControl variant="outlined" className={classes.formControl}>
+        <FormControl variant="outlined" className={classes.formControl}  error={state.errs.type ? true : false}>
           <InputLabel ref={inputLabel}>Phân loại</InputLabel>
           <Select
             native
             value={state.type}
-            error={state.errs.type ? true : false}
+           
             helperText={state.errs.type ? state.errs.type : ''}
             onChange={handleChange('type')}
             input={
@@ -136,29 +154,11 @@ export default function Register(props) {
             <option value={1}>Cơ quan, đơn vị</option>
             <option value={2}>Đơn vị Vận tải</option>
           </Select>
+          {state.errs.type ? <FormHelperText id="standard-weight-helper-text">{state.errs.type}</FormHelperText> : ''}
         </FormControl>
-        <TextField
-          className={classes.textfield}
-          name="password"
-          error={state.errs.password ? true : false}
-          helperText={state.errs.password ? state.errs.password : ''}
-          value={state.password}
-          label="Mật khẩu"
-          variant="outlined"
-          onChange={handleOnChange}
-        />
-        <TextField
-          className={classes.textfield}
-          name="password2"
-          error={state.errs.password2 ? true : false}
-          helperText={state.errs.password2 ? state.errs.password2 : ''}
-          value={state.password2}
-          label="Nhập lại mật khẩu"
-          variant="outlined"
-          onChange={handleOnChange}
-        />
+        
 
-<FormControl error={state.errs.password ? true : false} className={clsx(classes.margin, classes.textField)} variant="outlined"  style={{width: '100%' ,marginBottom: 20}}>
+        <FormControl error={state.errs.password ? true : false} className={clsx(classes.margin, classes.textField)} variant="outlined"  style={{width: '100%' ,marginBottom: 20}}>
           <InputLabel htmlFor="outlined-adornment-password">Mật khẩu</InputLabel>
           <OutlinedInput
             id="outlined-adornment-password"
@@ -183,6 +183,31 @@ export default function Register(props) {
           {state.errs.password ? <FormHelperText id="standard-weight-helper-text">{state.errs.password}</FormHelperText> : ''}
           
         </FormControl>
+        <FormControl error={state.errs.password2 ? true : false} className={clsx(classes.margin, classes.textField)} variant="outlined"  style={{width: '100%' ,marginBottom: 20}}>
+          <InputLabel htmlFor="outlined-adornment-password">Xác nhận lại mật khẩu</InputLabel>
+          <OutlinedInput
+            id="outlined-adornment-password"
+            type={values.showPassword2 ? 'text' : 'password'}
+            value={state.password2}
+            name="password2"
+            onChange={handleOnChange}
+            endAdornment={
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={handleClickShowPassword}
+                  onMouseDown={handleMouseDownPassword}
+                  edge="end"
+                >
+                  {values.showPassword2 ? <Visibility /> : <VisibilityOff />}
+                </IconButton>
+              </InputAdornment>
+            }
+            labelWidth={70}
+          />
+          {state.errs.password2 ? <FormHelperText id="standard-weight-helper-text">{state.errs.password2}</FormHelperText> : ''}
+          
+        </FormControl>
 
 
 
@@ -203,10 +228,24 @@ export default function Register(props) {
           </Link>{' '}
           ){' '}
         </Typography>
-
-        
-      </Paper>
         </form>
+        <Dialog
+          open={open}
+          onClose={handleClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title" style={{ textAlign: 'center' }}>
+            {'Phầm mềm yêu cầu Internet, kiểm tra lại đường truyền'}
+          </DialogTitle>
+
+          <DialogActions>
+            <Button onClick={handleClose} color="primary">
+              Đã rõ
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Paper>
     </div>
   );
 }
